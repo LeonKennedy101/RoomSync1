@@ -40,7 +40,7 @@ const seed=()=>({
    ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]}],
  log:[{d:'2026-09-03',t:'Added Room C414',s:'Completed'},{d:'2026-09-03',t:'Updated Web Development schedule',s:'Updated'},{d:'2026-09-02',t:'Makeup class scheduled',s:'Completed'}]
 });
-let db=JSON.parse(localStorage[KEY]||'null')||seed(),me=db.users.find(u=>u.id==sessionStorage.uid),pg='home',F={},ed=null,sel=null,hook=null,sidebarOpen=true;
+let db=JSON.parse(localStorage[KEY]||'null')||seed(),me=db.users.find(u=>u.id==sessionStorage.uid),pg='home',F={},ed=null,sel=null,hook=null,sidebarOpen=true,mobileNavOpen=false;
 db.bookings=db.bookings||[];
 db.rooms.forEach(r=>{
  if(!r.type||!ROOM_TYPES.includes(r.type))r.type=ROOM_TYPE_DEFAULTS[r.n]||undefined;
@@ -124,7 +124,9 @@ const showAvatar=()=>{
  dialog.addEventListener('close',()=>{root.innerHTML='';$('.avatar-trigger')?.focus()},{once:true});
  dialog.showModal();
 };
-const shell=(t,sub,body)=>`<aside id=portal-sidebar><button type=button class="sidebar-toggle icon-only neutral" aria-label="${sidebarOpen?'Hide':'Show'} sidebar" title="${sidebarOpen?'Hide':'Show'} sidebar" aria-controls=portal-sidebar aria-expanded="${sidebarOpen}" onclick="toggleSidebar()"><svg aria-hidden=true viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class=me><button type=button class=avatar-trigger aria-label="View larger profile photo for ${E(me.name)}" onclick="showAvatar()"><img class=avatar src="${avatarSrc(me)}" alt="" width=62 height=62></button><b>${E(me.name)}</b><small>${E(me.title)}</small></div>
+const isMobileSidebar=()=>window.matchMedia('(max-width: 700px)').matches;
+const sidebarButtonLabel=()=>isMobileSidebar()?(mobileNavOpen?'Close navigation':'Open navigation'):`${sidebarOpen?'Hide':'Show'} sidebar`;
+const shell=(t,sub,body)=>`<aside id=portal-sidebar><button type=button class="sidebar-toggle icon-only neutral" aria-label="${sidebarButtonLabel()}" title="${sidebarButtonLabel()}" aria-controls=portal-sidebar aria-expanded="${isMobileSidebar()?mobileNavOpen:sidebarOpen}" onclick="toggleSidebar()"><svg aria-hidden=true viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class=me><button type=button class=avatar-trigger aria-label="View larger profile photo for ${E(me.name)}" onclick="showAvatar()"><img class=avatar src="${avatarSrc(me)}" alt="" width=62 height=62></button><b>${E(me.name)}</b><small>${E(me.title)}</small></div>
  <nav aria-label="Portal navigation">
  ${NAV[me.role].map(([k,l,i])=>`<a tabindex=0 class="${pg==k?'on':''}" onclick="go('${k}')" onkeydown="event.key=='Enter'&&go('${k}')">${ic(i)}${l}</a>`).join('')}
  </nav>
@@ -143,6 +145,15 @@ const go=p=>{pg=p;F={};sel=null;ed=null;render()};
 const setScheduleDate=d=>{const{start,end}=schoolYear();if(d<start||d>end){$('.schedule-date').value=F.d;toast('Choose a date within the current school year.');return}
  F.d=d;hook&&hook()};
 const toggleSidebar=()=>{
+ if(isMobileSidebar()){
+  mobileNavOpen=!mobileNavOpen;
+  $('#app').classList.toggle('mobile-nav-open',mobileNavOpen);
+  const button=$('.sidebar-toggle'),label=sidebarButtonLabel();
+  button.setAttribute('aria-expanded',String(mobileNavOpen));
+  button.setAttribute('aria-label',label);
+  button.title=label;
+  return;
+ }
  sidebarOpen=!sidebarOpen;
  $('#app').classList.toggle('sidebar-hidden',!sidebarOpen);
  const button=$('.sidebar-toggle'),label=`${sidebarOpen?'Hide':'Show'} sidebar`;
@@ -150,6 +161,37 @@ const toggleSidebar=()=>{
  button.setAttribute('aria-label',label);
  button.title=label;
 };
+document.addEventListener('click',event=>{
+ if(!mobileNavOpen||$('#portal-sidebar')?.contains(event.target))return;
+ mobileNavOpen=false;
+ $('#app').classList.remove('mobile-nav-open');
+ const button=$('.sidebar-toggle'),label=sidebarButtonLabel();
+ button.setAttribute('aria-expanded','false');
+ button.setAttribute('aria-label',label);
+ button.title=label;
+});
+document.addEventListener('keydown',event=>{
+ if(event.key!='Escape'||!mobileNavOpen)return;
+ mobileNavOpen=false;
+ $('#app').classList.remove('mobile-nav-open');
+ const button=$('.sidebar-toggle'),label=sidebarButtonLabel();
+ button.setAttribute('aria-expanded','false');
+ button.setAttribute('aria-label',label);
+ button.title=label;
+ button.focus();
+});
+window.addEventListener('resize',()=>{
+ if(isMobileSidebar())return;
+ mobileNavOpen=false;
+ $('#app').classList.remove('mobile-nav-open');
+ const button=$('.sidebar-toggle');
+ if(button){
+  const label=sidebarButtonLabel();
+  button.setAttribute('aria-expanded',String(sidebarOpen));
+  button.setAttribute('aria-label',label);
+  button.title=label;
+ }
+});
 
 /* ---------- faculty ---------- */
 const fHome=()=>{const mine=x=>x.f==me.id,mk=db.mk.filter(m=>m.f==me.id&&active(m));
@@ -309,5 +351,5 @@ const cMk=()=>{hook=lst;const m=db.mk.find(x=>x.id==sel);
 
 /* ---------- router ---------- */
 const PG={faculty:{home:fHome,avail:fAvail,makeup:fMakeup,sched:fSched},student:{home:sHome,votes:sVotes},clerk:{home:cHome,rooms:cRooms,mk:cMk},dean:{home:aHome,appr:aAppr},vpaa:{home:aHome,appr:aAppr}};
-function render(){hook=null;$('#app').className=me?`app${sidebarOpen?'':' sidebar-hidden'}`:'';$('#app').innerHTML=me?PG[me.role][pg]():loginPg();save()}
+function render(){hook=null;mobileNavOpen=false;$('#app').className=me?`app${sidebarOpen?'':' sidebar-hidden'}`:'';$('#app').innerHTML=me?PG[me.role][pg]():loginPg();save()}
 render();

@@ -574,6 +574,13 @@ tr.off td { color: #888; background: #f2f2f2; }
 @media (max-width: 700px) {
   .app { display: block; }
   .app.sidebar-hidden { display: block; }
+  .app.mobile-nav-open::before {
+    position: fixed;
+    z-index: 3;
+    inset: 0;
+    background: #0008;
+    content: "";
+  }
   #login {
     grid-template-columns: minmax(0, 520px);
     justify-items: center;
@@ -588,7 +595,7 @@ tr.off td { color: #888; background: #f2f2f2; }
   aside {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 5;
     display: grid;
     width: 100%;
     height: auto;
@@ -597,6 +604,7 @@ tr.off td { color: #888; background: #f2f2f2; }
     align-items: center;
     gap: 8px 10px;
     padding: 8px 12px;
+    overflow: visible;
   }
   .app.sidebar-hidden aside {
     width: 100%;
@@ -606,21 +614,45 @@ tr.off td { color: #888; background: #f2f2f2; }
   }
   aside .sidebar-toggle,
   .app.sidebar-hidden aside .sidebar-toggle {
+    position: relative;
+    z-index: 7;
     grid-area: toggle;
     align-self: center;
     margin: 0;
   }
   aside nav {
-    grid-area: nav;
+    position: fixed;
+    z-index: 6;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: min(82vw, 280px);
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    padding: 76px 12px 72px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #1a1a1a;
+    box-shadow: 8px 0 24px #0003;
+    transform: translateX(-105%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform .22s ease, visibility .22s;
+  }
+  .app.mobile-nav-open aside nav {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .app.sidebar-hidden aside nav {
+    display: flex;
     min-width: 0;
     flex: none;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
   }
-  .app.sidebar-hidden aside nav { display: none; }
   aside .me {
     grid-area: profile;
     display: flex;
@@ -637,9 +669,29 @@ tr.off td { color: #888; background: #f2f2f2; }
   .avatar-trigger { width: 38px; height: 38px; flex: 0 0 38px; margin: 0; }
   .me .avatar { width: 38px; height: 38px; }
   .me small { margin-top: 0; }
-  aside a { min-height: 44px; flex: 0 0 auto; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
-  aside a.lo { grid-area: logout; justify-self: end; margin: 0; padding: 6px 10px; border: 0; }
-  .app.sidebar-hidden aside .lo { display: none; }
+  aside a { min-height: 44px; flex: 0 0 auto; padding: 8px 10px; font-size: 14px; white-space: nowrap; }
+  aside a.lo {
+    position: fixed;
+    z-index: 6;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 280px);
+    min-height: 56px;
+    margin: 0;
+    padding: 12px;
+    background: #1a1a1a;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-105%);
+    transition: transform .22s ease, opacity .16s ease, visibility .22s;
+  }
+  .app.mobile-nav-open aside a.lo {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
   .app.sidebar-hidden aside .me {
     visibility: visible;
     opacity: 1;
@@ -667,6 +719,13 @@ tr.off td { color: #888; background: #f2f2f2; }
   .card { min-width: 0; padding: 12px; }
   table { min-width: 620px; }
   .availability-note-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  aside nav,
+  aside a.lo {
+    transition: none;
+  }
 }
 
 @media (max-width: 430px) {
