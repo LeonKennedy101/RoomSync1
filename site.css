@@ -211,6 +211,21 @@ summary {
   }
 }
 
+@media (max-width: 520px) {
+  .top .in { gap: 8px; padding: 8px 14px; }
+  .top img { height: 48px; }
+  #menu { min-height: 44px; padding: 8px 12px; }
+  .wrap { padding: 24px 14px; }
+  .hero { gap: 20px; }
+  .hero h1 { font-size: clamp(30px, 9vw, 42px); }
+  .hero p { font-size: 16px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .box { min-width: 0; padding: 16px; overflow-wrap: anywhere; }
+  main h2.sec { font-size: 23px; }
+  .btn { min-height: 44px; padding: 11px 16px; }
+  .foot { padding: 20px 14px; }
+}
+
 /* Keep the portal's global header and h1 rules from restyling the public pages. */
 header.top {
   display: block;

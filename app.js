@@ -110,7 +110,21 @@ const NAV={faculty:[['home','Home','home'],['avail','Classroom Availability','ca
  clerk:[['home','Admin Home','home'],['rooms','Classroom Management','school'],['mk','Makeup Class Management','notebook']],
  dean:[['home','Home','home'],['appr','Approvals','check-circle']],vpaa:[['home','Home','home'],['appr','Approvals','check-circle']]};
 const avatars={'2024-6767':'peter','2024-6768':'norman','2024-0001':'mary-jane','2024-0002':'stephen','2024-0003':'charles','2026-1001':'gwen','2026-1002':'miles'};
-const shell=(t,sub,body)=>`<aside id=portal-sidebar><button type=button class="sidebar-toggle icon-only neutral" aria-label="${sidebarOpen?'Hide':'Show'} sidebar" title="${sidebarOpen?'Hide':'Show'} sidebar" aria-controls=portal-sidebar aria-expanded="${sidebarOpen}" onclick="toggleSidebar()"><svg aria-hidden=true viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class=me><img class=avatar src="assets/avatars/${avatars[me.id]||'default'}.svg" alt="" width=62 height=62><b>${E(me.name)}</b><small>${E(me.title)}</small></div>
+const avatarSrc=u=>`assets/avatars/${avatars[u.id]||'default'}.svg`;
+const showAvatar=()=>{
+ const root=$('#dialog-root');
+ root.innerHTML=`<dialog class=avatar-dialog aria-labelledby=avatar-title>
+  <h2 id=avatar-title>${E(me.name)}</h2>
+  <img src="${avatarSrc(me)}" alt="${E(me.name)} profile portrait">
+  <p>${E(me.title)}</p>
+  <form method=dialog><button class=neutral>Close</button></form>
+ </dialog>`;
+ const dialog=root.querySelector('dialog');
+ dialog.addEventListener('click',event=>{if(event.target==dialog)dialog.close()});
+ dialog.addEventListener('close',()=>{root.innerHTML='';$('.avatar-trigger')?.focus()},{once:true});
+ dialog.showModal();
+};
+const shell=(t,sub,body)=>`<aside id=portal-sidebar><button type=button class="sidebar-toggle icon-only neutral" aria-label="${sidebarOpen?'Hide':'Show'} sidebar" title="${sidebarOpen?'Hide':'Show'} sidebar" aria-controls=portal-sidebar aria-expanded="${sidebarOpen}" onclick="toggleSidebar()"><svg aria-hidden=true viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class=me><button type=button class=avatar-trigger aria-label="View larger profile photo for ${E(me.name)}" onclick="showAvatar()"><img class=avatar src="${avatarSrc(me)}" alt="" width=62 height=62></button><b>${E(me.name)}</b><small>${E(me.title)}</small></div>
  <nav aria-label="Portal navigation">
  ${NAV[me.role].map(([k,l,i])=>`<a tabindex=0 class="${pg==k?'on':''}" onclick="go('${k}')" onkeydown="event.key=='Enter'&&go('${k}')">${ic(i)}${l}</a>`).join('')}
  </nav>
