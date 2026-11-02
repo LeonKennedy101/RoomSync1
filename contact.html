@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contact the RoomSync team | RoomSync</title>
+    <meta
+      name="description"
+      content="Questions or feedback about RoomSync? Send a message to Group 5 of the College of Computer Studies, Tarlac State University."
+    >
+    <meta property="og:title" content="Contact the RoomSync team | RoomSync">
+    <meta
+      property="og:description"
+      content="Questions or feedback about RoomSync? Send a message to Group 5 of the College of Computer Studies, Tarlac State University."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/hero.png">
+    <link rel="icon" href="assets/favicon.png" type="image/png">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap"
+    >
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body style="background:#e5e5e5">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="in">
+        <a href="index.html">
+          <img src="assets/logo.png" alt="RoomSync home" height="58">
+        </a>
+        <button id="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+        <nav id="nav" aria-label="Main">
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="contact.html" aria-current="page">Contact</a></li>
+            <li><a class="cta" href="portal.html">Log in</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="wrap">
+      <h1>Contact us</h1>
+      <p>Questions about the system, or feedback for the team? Send us a message.</p>
+      <form id="contact" class="box" novalidate style="max-width:560px">
+        <label for="name">Your name</label>
+        <input id="name" name="name" autocomplete="name" aria-describedby="e-name">
+        <div class="err" id="e-name"></div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" aria-describedby="e-email">
+        <div class="err" id="e-email"></div>
+        <label for="role">I am a</label>
+        <select id="role" name="role" aria-describedby="e-role">
+          <option value="">Choose one</option>
+          <option>Faculty</option>
+          <option>Clerk</option>
+          <option>Dean or University Administrator</option>
+          <option>Student</option>
+        </select>
+        <div class="err" id="e-role"></div>
+        <label for="msg">Message</label>
+        <textarea id="msg" name="msg" aria-describedby="e-msg"></textarea>
+        <div class="err" id="e-msg"></div>
+        <button type="submit">Send message</button>
+        <p id="sent" role="status"></p>
+      </form>
+      <h2 class="sec">Where we are</h2>
+      <p>College of Computer Studies, Tarlac State University, San Isidro Campus, Tarlac City.</p>
+    </main>
+    <footer class="foot">
+      RoomSync · Group 5 · College of Computer Studies, Tarlac State University ·
+      <a href="contact.html">Contact</a>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>
