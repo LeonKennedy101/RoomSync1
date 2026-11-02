@@ -191,23 +191,52 @@ summary {
 
   #menu {
     display: block;
+    position: relative;
+    z-index: 23;
   }
 
   .top nav {
-    display: none;
-    width: 100%;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 21;
+    display: block;
+    width: min(82vw, 320px);
+    padding: 84px 20px 24px;
+    overflow-y: auto;
+    background: #1a1a1a;
+    box-shadow: -8px 0 24px #0003;
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform 220ms ease, visibility 220ms;
   }
 
   .top nav.open {
-    display: block;
+    transform: translateX(0);
+    visibility: visible;
   }
 
   .top .in {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .top nav ul {
     flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .top nav a {
+    padding: 12px 14px;
+  }
+
+  body.menu-open::before {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: #0008;
+    content: "";
   }
 }
 
@@ -224,6 +253,12 @@ summary {
   main h2.sec { font-size: 23px; }
   .btn { min-height: 44px; padding: 11px 16px; }
   .foot { padding: 20px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top nav {
+    transition: none;
+  }
 }
 
 /* Keep the portal's global header and h1 rules from restyling the public pages. */

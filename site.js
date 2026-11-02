@@ -4,9 +4,42 @@ const menu = $('#menu');
 const nav = $('#nav');
 
 if (menu) {
+  const closeMenu = () => {
+    nav.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    menu.setAttribute('aria-expanded', 'false');
+  };
+
   menu.addEventListener('click', () => {
-    const isOpen = nav.classList.toggle('open');
+    const isOpen = menu.getAttribute('aria-expanded') !== 'true';
+    nav.classList.toggle('open', isOpen);
+    document.body.classList.toggle('menu-open', isOpen);
     menu.setAttribute('aria-expanded', isOpen);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (
+      menu.getAttribute('aria-expanded') === 'true' &&
+      !menu.contains(event.target) &&
+      !nav.contains(event.target)
+    ) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
+      closeMenu();
+      menu.focus();
+    }
+  });
+
+  nav.addEventListener('click', (event) => {
+    if (event.target.closest('a')) closeMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 760) closeMenu();
   });
 }
 
