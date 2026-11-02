@@ -140,7 +140,10 @@ const loginPg=()=>`<div id=login><div class=brand><img class=login-logo src="ass
  <div class=err id=err></div><button onclick=login()>Login</button>
  <p class=mu>Demo accounts (password 1234):<br>${db.users.map(u=>`<button class=chip onclick="$('#id').value='${u.id}';$('#pw').value='1234'">${u.role}</button>`).join('')}</p></div></div>`;
 const login=()=>{const u=db.users.find(u=>u.id==$('#id').value.trim()&&u.pw==$('#pw').value);if(!u)return $('#err').textContent='Invalid ID or password.';sessionStorage.uid=u.id;me=u;go('home')};
-const out=()=>{sessionStorage.removeItem('uid');me=null;render()};
+const out=async()=>{
+ if(!await confirmAction('Log out?',`Are you sure you want to log out of RoomSync, ${me.name}?`,'Log out'))return;
+ sessionStorage.removeItem('uid');me=null;render();
+};
 const go=p=>{pg=p;F={};sel=null;ed=null;render()};
 const setScheduleDate=d=>{const{start,end}=schoolYear();if(d<start||d>end){$('.schedule-date').value=F.d;toast('Choose a date within the current school year.');return}
  F.d=d;hook&&hook()};
