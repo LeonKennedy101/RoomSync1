@@ -307,3 +307,76 @@ main.wrap h1 {
 .fig {
   border-radius: 20px;
 }
+
+/* Match the portal's blue-glass finish without changing public-page layout. */
+body {
+  color: #20232b;
+  background:
+    radial-gradient(ellipse at 10% 12%, #4f86f718, transparent 34%),
+    radial-gradient(ellipse at 94% 82%, #4f86f70d, transparent 38%),
+    #e8ebf0;
+}
+
+.top {
+  background:
+    radial-gradient(ellipse at 12% 0%, #4f86f72e, transparent 42%),
+    linear-gradient(120deg, #242832f2, #17181cf2);
+  border-bottom-color: #4f86f7;
+  box-shadow: 0 5px 24px #1a1a1a1f, 0 1px 18px #4f86f733;
+}
+
+.top nav a[aria-current=page] {
+  color: #172033;
+  background: linear-gradient(110deg, #dceaff, #b9d3ff);
+  box-shadow: 0 0 16px #4f86f755, inset 0 1px #ffffffc9;
+}
+
+.top nav a.cta {
+  background: linear-gradient(135deg, #5c91fa, #3c72dc);
+  box-shadow: 0 0 16px #4f86f755, inset 0 1px #ffffff55;
+}
+
+.top nav a.cta:hover { background: linear-gradient(135deg, #75a3ff, #4f86f7); }
+
+.wrap {
+  background:
+    radial-gradient(ellipse at 8% 8%, #4f86f71c, transparent 36%),
+    radial-gradient(ellipse at 92% 42%, #ffffffa6, transparent 40%),
+    linear-gradient(145deg, #eef1f6, #e4e8ef);
+}
+
+.hero img {
+  border-color: #ffffffed;
+  box-shadow: 0 0 0 1px #4f86f755, 0 0 28px #4f86f733, 0 18px 38px #1a1a1a18;
+}
+
+.box {
+  background: linear-gradient(145deg, #ffffffdf, #f7f9ffcc);
+  border-color: #ffffffed;
+  box-shadow: 0 0 22px #4f86f71c, 0 12px 30px #26365012, inset 0 1px #ffffff;
+}
+
+.box:hover {
+  border-color: #c1d3f5;
+  border-top-color: #4f86f7;
+  box-shadow: 0 0 0 1px #4f86f733, 0 0 24px #4f86f733, 0 12px 26px #26365018;
+}
+
+details {
+  background: linear-gradient(145deg, #ffffffdf, #f7f9ffcc);
+  border-top-color: #ffffffed;
+  box-shadow: 0 8px 22px #26365010, inset 0 1px #ffffff;
+}
+
+details[open],
+details:hover {
+  border-left-color: #4f86f7;
+  box-shadow: 0 0 18px #4f86f733, 0 8px 22px #26365012;
+}
+
+.foot {
+  background:
+    radial-gradient(ellipse at 50% 0%, #4f86f72a, transparent 56%),
+    linear-gradient(120deg, #242832, #17181c);
+  box-shadow: 0 -5px 20px #4f86f712;
+}

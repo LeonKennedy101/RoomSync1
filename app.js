@@ -3,6 +3,8 @@ const $=s=>document.querySelector(s),KEY='roomsync_v2';
 const mins=t=>{const[a,b]=t.split(':');return+a*60+ +b};
 const f12=t=>{let[h,m]=t.split(':');h=+h;return`${(h+11)%12+1}:${m} ${h<12?'AM':'PM'}`};
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const nextDay=()=>{const d=new Date();d.setDate(d.getDate()+1);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const validDate=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||'');if(!m)return false;const date=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));return date.getUTCFullYear()==+m[1]&&date.getUTCMonth()==+m[2]-1&&date.getUTCDate()==+m[3]};
 const schoolYear=()=>{const d=today(),y=+d.slice(0,4),m=+d.slice(5,7),startYear=m>=8?y:y-1;return{start:`${startYear}-08-01`,end:`${startYear+1}-07-31`}};
 const fd=d=>new Date(d+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const wk=d=>new Date(d+'T00:00').getDay(),ov=(a,b,c,d)=>mins(a)<mins(d)&&mins(c)<mins(b);
@@ -42,6 +44,20 @@ const seed=()=>({
 });
 let db=JSON.parse(localStorage[KEY]||'null')||seed(),me=db.users.find(u=>u.id==sessionStorage.uid),pg='home',F={},ed=null,sel=null,hook=null,sidebarOpen=true,mobileNavOpen=false;
 db.bookings=db.bookings||[];
+db.classes=db.classes||[];
+const CAMPUS_WEEKDAYS=[1,2,3,4,5,6];
+const classDays=c=>{
+ const source=c.days??c.weekdays??c.day??c.weekday??c.dayOfWeek;
+ if(source==null)return[...CAMPUS_WEEKDAYS];
+ const names=['sun','mon','tue','wed','thu','fri','sat'];
+ const values=Array.isArray(source)?source:String(source).split(/[,\s/]+/);
+ return[...new Set(values.map(value=>{
+  if(Number.isInteger(value))return value;
+  const text=String(value).trim().toLowerCase();
+  return /^\d$/.test(text)?+text:names.findIndex(name=>name==text.slice(0,3));
+ }).filter(day=>day>=1&&day<=6))];
+};
+db.classes.forEach(c=>{c.days=classDays(c)});
 db.rooms.forEach(r=>{
  if(!r.type||!ROOM_TYPES.includes(r.type))r.type=ROOM_TYPE_DEFAULTS[r.n]||undefined;
  if(r.n=='C312'&&!r.on&&!r.offReason)r.offReason='Under maintenance';
@@ -66,7 +82,7 @@ const active=m=>!/Cancel|Reject/.test(st(m));
 const bookingStatus=b=>b.cx?'Cancelled':!b.ap?'Approved':b.ap.some(a=>a.s=='rejected')?'Rejected':b.ap.every(a=>a.s=='approved')?'Approved':'Pending '+b.ap.find(a=>a.s=='pending').l;
 const activeBooking=b=>!/Cancel|Reject/.test(bookingStatus(b));
 const bookingNeedsAction=b=>!b.cx&&b.ap?.some(a=>a.r==me.role&&a.s=='pending');
-const busy=(d,s,e,fn,ign)=>[...(wk(d)?db.classes.map(c=>({...c,t:'Regular'})):[]),
+const busy=(d,s,e,fn,ign)=>[...db.classes.filter(c=>c.days.includes(wk(d))).map(c=>({...c,t:'Regular'})),
  ...db.bookings.filter(b=>b.date==d&&activeBooking(b)).map(b=>({f:b.f,s:b.s,e:b.e,r:b.r,t:'One-time reservation'})),
  ...db.mk.filter(m=>m.id!=ign&&active(m)&&m.date==d).map(m=>({f:m.f,sec:m.sec,sub:m.sub,s:m.s,e:m.e,r:m.room,t:'Makeup'}))].filter(x=>ov(s,e,x.s,x.e)&&fn(x));
 const roomOK=(r,d,s,e)=>r.on&&!busy(d,s,e,x=>x.r==r.n).length;
@@ -74,10 +90,8 @@ const roomStatus=(r,d,s,e,attendees=0)=>{
  if(!r.on)return r.offReason?`Unavailable: ${E(r.offReason)}`:'Unavailable (marked by the clerk)';
  const reasons=[];
  if(attendees>r.cap)reasons.push(`Too small (${r.cap} seats; ${attendees} requested)`);
- if(wk(d)){
-  const c=db.classes.find(x=>x.r==r.n&&ov(s,e,x.s,x.e));
-  if(c)reasons.push(`Weekly class: ${E(c.sub)} (${E(c.sec)}), ${f12(c.s)}–${f12(c.e)}`);
- }
+ const c=db.classes.find(x=>x.days.includes(wk(d))&&x.r==r.n&&ov(s,e,x.s,x.e));
+ if(c)reasons.push(`Weekly class: ${E(c.sub)} (${E(c.sec)}), ${f12(c.s)}–${f12(c.e)}`);
  const booking=db.bookings.find(b=>activeBooking(b)&&b.r==r.n&&b.date==d&&ov(s,e,b.s,b.e));
  if(booking)reasons.push(`Reserved: ${E(booking.purpose||'One-time session')}, ${f12(booking.s)}–${f12(booking.e)}`);
  const makeup=db.mk.find(m=>active(m)&&m.room==r.n&&m.date==d&&ov(s,e,m.s,m.e));
@@ -96,7 +110,7 @@ const stats=a=>`<div class=stats>${a.map(([n,l])=>`<div class=st><b>${n}</b>${l}
 const S=(k,v,o)=>`<select onchange="sf('${k}',this.value)">${o.map(x=>{const[a,b]=Array.isArray(x)?x:[x,x];return`<option value="${E(a)}"${a==v?' selected':''}>${E(b)}</option>`}).join('')}</select>`;
 const I=(k,v,t='text',x='')=>`<input type=${t} value="${E(v)}" oninput="sf('${k}',this.value)" ${x}>`;
 const TS=TO.map(t=>[t,f12(t)]),sf=(k,v)=>{F[k]=v;if(pg=='avail'&&['d','s','e','n'].includes(k))F.room=null;hook&&hook()};
-const dayRows=(d,fn)=>[...(wk(d)?db.classes.filter(fn).map(c=>[c.s,c.e,c.r,c.sub,c.sec,'Regular']):[]),
+const dayRows=(d,fn)=>[...db.classes.filter(c=>c.days.includes(wk(d))&&fn(c)).map(c=>[c.s,c.e,c.r,c.sub,c.sec,'Regular']),
  ...db.bookings.filter(b=>activeBooking(b)&&b.date==d&&fn({f:b.f})).map(b=>[b.s,b.e,b.r,b.purpose||'One-time session','—',`One-time reservation (${bookingStatus(b)})`]),
  ...db.mk.filter(m=>active(m)&&m.date==d&&fn({f:m.f,sec:m.sec})).map(m=>[m.s,m.e,m.room,m.sub,m.sec,st(m)=='Scheduled'?'Makeup':'Makeup (pending)'])]
  .sort((a,b)=>mins(a[0])-mins(b[0])).map(r=>[`${f12(r[0])} – ${f12(r[1])}`,...r.slice(2)]);
@@ -134,7 +148,7 @@ const shell=(t,sub,body)=>`<aside id=portal-sidebar><button type=button class="s
  <main><header><div class=header-title><div><h1>${t}</h1><p>${sub}</p></div></div><div class=hr><span class=lg><img src="assets/logo-dark.png" alt="RoomSync"></span><span>${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}<br>${fd(today())}</span></div></header><section>${body}</section></main>`;
 
 /* ---------- auth ---------- */
-const loginPg=()=>`<div id=login><div class=brand><img class=login-logo src="assets/logo.png" alt="RoomSync: Classroom Availability | Makeup Class Scheduler"></div>
+const loginPg=()=>`<div id=login><a class=login-exit href="index.html">Back to website</a><div class=brand><img class=login-logo src="assets/logo.png" alt="RoomSync: Classroom Availability | Makeup Class Scheduler"></div>
  <div class=lc><h2>Welcome back!</h2><label for=id>Employee / Student ID</label><input id=id autocomplete=username>
  <label for=pw>Password <span class=bad>*</span></label><input id=pw type=password autocomplete=current-password onkeydown="event.key=='Enter'&&login()">
  <div class=err id=err></div><button onclick=login()>Login</button>
@@ -234,30 +248,36 @@ const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.ki
  <div><label>Date</label>${I('d',F.d,'date')}</div><div><label>Start Time</label>${S('s',F.s,TS)}</div><div><label>End Time</label>${S('e',F.e,TS)}</div>
  <div><label>Session type</label>${S('kind',F.kind,BOOKING_PURPOSES)}</div><div><label>Number of attendees</label>${I('n',F.n,'number','min=1 step=1')}</div></div>
  <button onclick="F.go=1;F.room=null;aRes()">Check Availability ${ib('search')}</button></div><h3>Available Rooms</h3><div id=res></div>`)+(F.go?(setTimeout(aRes),''):'')};
-const calc=()=>{const[sec,sub]=(F.cls||'|').split('|'),{d,s,e}=F,bad=mins(s)>=mins(e)||d<today();
+const calc=()=>{const[sec,sub]=(F.cls||'|').split('|'),{d,od,s,e}=F,students=Number(F.n);
+ const dateError=!validDate(d)?'Enter a valid makeup date.':d<today()?'The makeup date cannot be in the past.':!validDate(od)?'Enter a valid original class date.':d<=od?'The makeup date must be later than the original class date.':'';
+ const studentError=!Number.isInteger(students)||students<=0?'Enter a whole number of students greater than zero.':'';
+ const timeError=mins(s)>=mins(e)?'Choose an end time after the start time.':'';
+ const error=dateError||studentError||timeError,bad=!!error;
  const sc=bad?[]:busy(d,s,e,x=>x.sec==sec),fc=bad?[]:busy(d,s,e,x=>x.f==me.id);
- const rm=db.rooms.map(r=>({r,ok:!bad&&roomOK(r,d,s,e)&&r.cap>=F.n,why:!r.on?'Unavailable':bad||!roomOK(r,d,s,e)?'Booked':r.cap<F.n?'Too small':''}));
+ const rm=db.rooms.map(r=>({r,ok:!bad&&roomOK(r,d,s,e)&&r.cap>=students,why:!r.on?'Unavailable':bad?'Check details':!roomOK(r,d,s,e)?'Booked':r.cap<students?'Too small':''}));
  if(F.room&&!rm.find(x=>x.r.n==F.room&&x.ok))F.room=null;
  const why=(F.why||'').trim(),whyOK=why.length>=10;
  const ok=!bad&&!sc.length&&!fc.length&&!!F.room&&whyOK;
  const list=a=>a.map(x=>`${x.sub} (${x.sec}, ${f12(x.s)}–${f12(x.e)})`).join('; ');
- const chk=bad?`<span class=bad>● Check the date (not in the past) and time (end after start).</span>`:sc.length?`<span class=bad>● Conflict: ${sec} already has ${E(list(sc))}. Choose another schedule.</span>`:fc.length?`<span class=bad>● Conflict: you already have ${E(list(fc))}.</span>`:`<span class=ok>● Clear. ${sec} has no conflicting class during this time.</span>`;
- return{ok,html:`<h3>Available Rooms</h3>${tb(['Room','Room Type','Capacity','Status',''],rm.map(x=>{const row=['Room '+x.r.n,E(roomType(x.r)),x.r.cap,x.ok?'<span class=ok>● Available</span>':`<span class=bad>● ${x.why}</span>`,
+ const chk=error?`<span class=bad>● ${E(error)}</span>`:sc.length?`<span class=bad>● Conflict: ${sec} already has ${E(list(sc))}. Choose another schedule.</span>`:fc.length?`<span class=bad>● Conflict: you already have ${E(list(fc))}.</span>`:`<span class=ok>● Clear. ${sec} has no conflicting class during this time.</span>`;
+ return{ok,error:error||(!whyOK?'Enter a specific reason with at least 10 characters.':''),studentsValid:!studentError,html:`<h3>Available Rooms</h3>${tb(['Room','Room Type','Capacity','Status',''],rm.map(x=>{const row=['Room '+x.r.n,E(roomType(x.r)),x.r.cap,x.ok?'<span class=ok>● Available</span>':`<span class=bad>● ${x.why}</span>`,
   x.ok?`<button class=sm onclick="F.room='${x.r.n}';upd()">${F.room==x.r.n?'Selected':'Select room'}</button>`:'<span class=mu>—</span>'];if(!x.ok)row.off=1;return row}))}
   <div class=chk><b>Schedule Check</b><br>${chk}</div><div class=chk><b>Approval needed</b><br>Dean → University Administrator. The room is held while pending and confirmed once both approve.</div>`}};
 const upd=()=>{const c=calc();$('#dyn').innerHTML=c.html;$('#sb').disabled=!c.ok;
+ const studentHint=$('#student-hint');
+ if(studentHint){studentHint.className='chk '+(c.studentsValid?'ok':'bad');studentHint.textContent=c.studentsValid?'Student count looks good.':'Enter a whole number greater than zero.'}
  const hint=$('#reason-hint'),why=(F.why||'').trim();
  if(hint){hint.className='chk '+(why.length>=10?'ok':why?'bad':'mu');hint.textContent=why.length>=10?'Reason looks good.':`Enter a specific reason (at least 10 characters). ${why.length}/10 characters.`}
 };
 const fMakeup=()=>{const my=[...new Map(db.classes.filter(c=>c.f==me.id).map(c=>[c.sec+'|'+c.sub,c])).keys()];
- F.cls=F.cls||my[0];F.n=F.n||40;F.d=F.d||today();F.od=F.od||today();F.s=F.s||'18:00';F.e=F.e||'21:00';F.why=F.why||'';hook=upd;const sec=F.cls.split('|')[0];
+ F.cls=F.cls||my[0];F.n=F.n||40;F.d=F.d||nextDay();F.od=F.od||today();F.s=F.s||'18:00';F.e=F.e||'21:00';F.why=F.why||'';hook=upd;const sec=F.cls.split('|')[0],studentsValid=Number.isInteger(+F.n)&&+F.n>0;
  return shell('Makeup Class Scheduler','Schedule a makeup class and request approval.',`<div class=card><div class=g>
- <div><label>Subject · Section</label>${S('cls',F.cls,my.map(k=>[k,k.split('|')[1]+' · '+k.split('|')[0]]))}</div><div><label>Number of students</label>${I('n',F.n,'number','min=1')}</div>
+ <div><label>Subject · Section</label>${S('cls',F.cls,my.map(k=>[k,k.split('|')[1]+' · '+k.split('|')[0]]))}</div><div><label>Number of students</label>${I('n',F.n,'number','min=1 step=1')}<div id=student-hint class="chk ${studentsValid?'ok':'bad'}">${studentsValid?'Student count looks good.':'Enter a whole number greater than zero.'}</div></div>
  <div><label>Start time</label>${S('s',F.s,TS)}</div><div><label>End time</label>${S('e',F.e,TS)}</div>
- <div><label>Original class date</label>${I('od',F.od,'date')}</div><div><label>Makeup class date</label>${I('d',F.d,'date')}</div></div>
+ <div><label>Original class date</label>${I('od',F.od,'date')}</div><div><label>Makeup class date</label>${I('d',F.d,'date',`min="${today()}"`)}</div></div>
  <label>Reason for makeup class (be specific)</label><textarea oninput="F.why=this.value;upd()" placeholder="Class suspension due to …">${E(F.why)}</textarea><div id=reason-hint class=chk>Enter a specific reason (at least 10 characters). ${(F.why||'').trim().length}/10 characters.</div></div>
  <div id=dyn>${calc().html}</div><button id=sb onclick=submitMk() ${calc().ok?'':'disabled'}>Submit for Approval ${ib('check-circle')}</button>`)};
-const submitMk=()=>{const c=calc();if(!c.ok){upd();return toast((F.why||'').trim().length<10?'Please enter a specific reason with at least 10 characters.':'Please resolve the schedule or room availability checks before submitting.')}
+const submitMk=()=>{const c=calc();if(!c.ok){upd();return toast(c.error||'Please resolve the schedule or room availability checks before submitting.')}
  const[sec,sub]=F.cls.split('|');db.mk.push({id:Date.now(),f:me.id,sec,sub,n:+F.n,od:F.od,date:F.d,s:F.s,e:F.e,room:F.room,why:F.why.trim(),v:{},
  ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]});log(`Makeup request: ${sub} ${sec} (${me.name})`,'Pending');toast('Submitted. Waiting for the Dean’s approval.');go('sched')};
 const mkCard=(m,x='')=>`<div class=card><div class=rw><b>${m.sub} · ${m.sec} — ${fd(m.date)}, ${f12(m.s)}–${f12(m.e)}, Room ${m.room}</b>${bd(m)}</div>
