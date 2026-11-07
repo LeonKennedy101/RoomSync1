@@ -529,6 +529,11 @@ table tr { transition: background-color .26s var(--ease-fluid); }
   font-size: 14px;
 }
 
+.official-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 0 14px; }
+.official-card { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.official-avatar { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 50%; object-fit: cover; }
+.official-info { min-width: 0; }
+.official-info h3 { margin: 0 0 4px; overflow-wrap: anywhere; }
 .g { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 8px 14px; }
 h3 { margin: 24px 0 10px; color: var(--ink); font-size: 17px; font-weight: 700; letter-spacing: -.2px; }
 
@@ -866,10 +871,22 @@ tr.off td { color: #888; background: #f2f2f2; }
   .stats > .st:last-child:nth-child(odd) { grid-column: auto; }
 }
 
+@page { margin: 18mm; }
+
 @media print {
-  body * { visibility: hidden; }
-  #print, #print * { visibility: visible; }
-  #print { position: absolute; top: 0; left: 0; width: 100%; background: #fff; border: 0; box-shadow: none; }
+  html, body { color: #000 !important; background: #fff !important; }
+  .app { display: block !important; }
+  main, section, #print-area { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  body * { visibility: hidden !important; }
+  #print, #print * { visibility: visible !important; color: #000 !important; background: #fff !important; box-shadow: none !important; text-shadow: none !important; }
+  #print { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; }
+  #print.booking-form { page-break-inside: avoid; break-inside: avoid; }
+  #print.booking-history-print { position: static; width: 100%; }
+  #print .booking-history-table { width: 100%; table-layout: auto; border-collapse: collapse; }
+  #print .booking-history-table thead { display: table-header-group; }
+  #print .booking-history-table tr { page-break-inside: avoid; break-inside: avoid; }
+  #print .booking-history-table th, #print .booking-history-table td { padding: 6px; color: #000 !important; background: #fff !important; border: 1px solid #000; text-align: left; vertical-align: top; word-break: break-word; font-size: 11px; }
+  nav, aside, button { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
