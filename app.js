@@ -1,5 +1,5 @@
 /* RoomSync localStorage. Demo password: 1234 */
-const $=s=>document.querySelector(s),KEY='roomsync_v3';
+const $=s=>document.querySelector(s),KEY='roomsync_v2';
 const mins=t=>{const[a,b]=t.split(':');return+a*60+ +b};
 const f12=t=>{let[h,m]=t.split(':');h=+h;return`${(h+11)%12+1}:${m} ${h<12?'AM':'PM'}`};
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
@@ -11,7 +11,7 @@ const wk=d=>new Date(d+'T00:00').getDay(),ov=(a,b,c,d)=>mins(a)<mins(d)&&mins(c)
 const E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const roomType=r=>r.type||'Unspecified';
 const ROOM_TYPES=['Classroom','Computer Laboratory','Science Laboratory','Lecture Hall','Seminar Room','Conference Room'];
-const BOOKING_PURPOSES=['Consultation','Review session','Exam','Activity','Other'];
+const BOOKING_PURPOSES=['Consultation','Review session','Exam','Activity','Regular class (room change)','Other'];
 const ROOM_TYPE_DEFAULTS={C411:'Computer Laboratory',C111:'Classroom',R201:'Classroom',L101:'Lecture Hall',C413:'Computer Laboratory'};
 const YR=['','1st','2nd','3rd','4th'],TO=[];
 for(let h=7;h<=21;h++)for(const m of['00','30'])if(h<21||m=='00')TO.push(String(h).padStart(2,'0')+':'+m);
@@ -33,17 +33,6 @@ const seed=()=>({
   {f:'2024-6767',s:'16:00',e:'18:00',r:'L101',sub:'Web Development',sec:'WMA-3B'},
   {f:'2024-6768',s:'08:00',e:'11:00',r:'C312',sub:'CC6',sec:'TSM-1B'},
   {f:'2024-6768',s:'13:00',e:'16:00',r:'C413',sub:'CC3',sec:'NA-2A'}],
- bookings:[
-  {id:101,f:'2024-6767',date:'2026-11-08',requestedAt:'2026-11-04',s:'09:00',e:'10:00',r:'C414',purpose:'Consultation',section:'WMA-3A',attendees:4,
-   ap:[{l:'Dean',r:'dean',s:'approved',by:'Dean Stephen Strange',at:'2026-11-05'},{l:'Univ. Admin',r:'vpaa',s:'approved',by:'Dr. Charles Xavier',at:'2026-11-06'}]},
-  {id:102,f:'2024-6768',date:'2026-11-15',requestedAt:'2026-11-05',s:'10:00',e:'11:00',r:'C411',purpose:'Review session',section:'TSM-1B',attendees:12,
-   ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]},
-  {id:103,f:'2024-6767',date:'2026-11-22',requestedAt:'2026-11-07',s:'13:00',e:'14:00',r:'C413',purpose:'Exam',section:'WMA-3A',attendees:24,
-   ap:[{l:'Dean',r:'dean',s:'rejected',by:'Dean Stephen Strange',at:'2026-11-09',note:'Room C413 is reserved for a department activity at that time.'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]},
-  {id:104,f:'2024-6768',date:'2026-11-29',requestedAt:'2026-11-08',s:'15:00',e:'16:00',r:'C414',purpose:'Review session',section:'WMA-3A',attendees:18,
-   ap:[{l:'Dean',r:'dean',s:'approved',by:'Dean Stephen Strange',at:'2026-11-10'},{l:'Univ. Admin',r:'vpaa',s:'rejected',by:'Dr. Charles Xavier',at:'2026-11-11',note:'The proposed session conflicts with the university assessment schedule.'}]},
-  {id:105,f:'2024-6768',date:'2026-12-06',requestedAt:'2026-11-09',s:'10:00',e:'11:00',r:'L101',purpose:'Activity',section:'',attendees:20,cx:'Faculty schedule changed after submission.',cxAt:'2026-11-10',
-   ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]}],
  mk:[
   {id:1,f:'2024-6767',sec:'WMA-3A',sub:'Web Development',n:45,od:'2026-08-29',date:'2026-09-03',s:'18:00',e:'21:00',room:'C414',why:'Class suspension due to typhoon',v:{'2026-1001':'y','2026-1002':'y'},
    ap:[{l:'Dean',r:'dean',s:'approved',by:'Dean Stephen Strange',at:'2026-09-01'},{l:'Univ. Admin',r:'vpaa',s:'approved',by:'Dr. Charles Xavier',at:'2026-09-02'}]},
@@ -84,22 +73,6 @@ const confirmAction=(title,message,label)=>new Promise(resolve=>{
  </dialog>`;
  const dialog=root.querySelector('dialog');
  dialog.addEventListener('close',()=>{const confirmed=dialog.returnValue=='confirm';root.innerHTML='';resolve(confirmed)},{once:true});
- dialog.showModal();
-});
-
-// Request and validate a cancellation reason in an accessible modal dialog.
-const confirmReason=(title,message,label)=>new Promise(resolve=>{
- const root=$('#dialog-root');
- root.innerHTML=`<dialog class=confirm-dialog aria-labelledby=reason-title aria-describedby=reason-message>
-  <h2 id=reason-title>${E(title)}</h2><p id=reason-message>${E(message)}</p>
-  <label for=cancel-reason>Cancellation reason (at least 10 characters)</label><textarea id=cancel-reason rows=4 aria-describedby=cancel-reason-hint></textarea>
-  <div id=cancel-reason-hint class=chk aria-live=polite>Enter a detailed reason. 0/10 characters.</div>
-  <form method=dialog class=rw><button class=sm value=cancel>Back</button><button class=sm id=cancel-reason-submit value=confirm disabled>${E(label)}</button></form>
- </dialog>`;
- const dialog=root.querySelector('dialog'),textarea=root.querySelector('#cancel-reason'),hint=root.querySelector('#cancel-reason-hint'),submit=root.querySelector('#cancel-reason-submit');
- // Keep submission disabled until the trimmed reason meets the minimum length.
- textarea.addEventListener('input',()=>{const length=textarea.value.trim().length;hint.textContent=length>=10?'Reason looks good.':`Enter a detailed reason. ${length}/10 characters.`;submit.disabled=length<10});
- dialog.addEventListener('close',()=>{const reason=dialog.returnValue=='confirm'?textarea.value.trim():null;root.innerHTML='';resolve(reason)},{once:true});
  dialog.showModal();
 });
 
@@ -146,19 +119,12 @@ const nowT=()=>{const h=new Date().getHours();return[String(h).padStart(2,'0')+'
 const freeNow=()=>{const[s,e]=nowT();return db.rooms.filter(r=>roomOK(r,today(),s,e)).length};
 
 const ic=n=>`<img class="ic b" src="assets/icons/${n}-blue.png" alt=""><img class="ic k" src="assets/icons/${n}-black.png" alt="">`,ib=n=>`<img class=ic src="assets/icons/${n}-white.png" alt="">`;
-const NAV={faculty:[['home','Home','home'],['avail','Classroom Availability','calendar-check'],['makeup','Makeup Class Scheduler','calendar-search'],['sched','My Schedule','notebook'],['hist','Consultation History','notebook'],['officials','Approving Officials','check-circle']],
- student:[['home','Home','home'],['votes','Makeup Class Votes','check-circle'],['officials','Approving Officials','check-circle']],
- clerk:[['home','Admin Home','home'],['rooms','Classroom Management','school'],['mk','Makeup Class Management','notebook'],['crec','Consultation Records','notebook'],['officials','Approving Officials','check-circle']],
+const NAV={faculty:[['home','Home','home'],['avail','Classroom Availability','calendar-check'],['makeup','Makeup Class Scheduler','calendar-search'],['sched','My Schedule','notebook']],
+ student:[['home','Home','home'],['votes','Makeup Class Votes','check-circle']],
+ clerk:[['home','Admin Home','home'],['rooms','Classroom Management','school'],['mk','Makeup Class Management','notebook']],
  dean:[['home','Home','home'],['appr','Approvals','check-circle']],vpaa:[['home','Home','home'],['appr','Approvals','check-circle']]};
 const avatars={'2024-6767':'peter','2024-6768':'norman','2024-0001':'mary-jane','2024-0002':'stephen','2024-0003':'charles','2026-1001':'gwen','2026-1002':'miles'};
 const avatarSrc=u=>`assets/avatars/${avatars[u.id]||'default'}.svg`;
-// Resolve an approval role to its configured reviewer name.
-const reviewerName=role=>db.users.find(u=>u.role==role)?.name||role;
-// List reviewer names only for approval steps that have not been decided.
-const pendingApprovals=ap=>(ap||[]).filter(a=>a.s=='pending'||a.s=='waiting').map(a=>`<div class=mu>${E(a.l)}: ${E(a.s)}, ${E(reviewerName(a.r))}</div>`).join('');
-// Show the ordered system approvers to faculty, students, and the clerk.
-const approvingOfficials=()=>shell('Approving Officials','System administrators responsible for reviewing schedule requests.',`<p class=mu>Every makeup class and one-time room request is reviewed by these officials in this order.</p><div class=official-list>
- ${db.users.filter(u=>u.role=='dean'||u.role=='vpaa').map(u=>`<div class="card official-card"><img class=official-avatar src="${avatarSrc(u)}" alt="${E(u.name)} profile photo"><div class=official-info><h3>${E(u.name)}</h3><div class=mu>${E(u.title)}</div><div class=mu>${u.role=='dean'?'Step 1: Dean':'Step 2: University Administrator'}</div></div></div>`).join('')}</div>`);
 const showAvatar=()=>{
  const root=$('#dialog-root');
  root.innerHTML=`<dialog class=avatar-dialog aria-labelledby=avatar-title>
@@ -245,13 +211,9 @@ window.addEventListener('resize',()=>{
 });
 
 /* ---------- faculty ---------- */
-const fHome=()=>{const mine=x=>x.f==me.id,mk=db.mk.filter(m=>m.f==me.id&&active(m)),rejected=db.bookings.filter(b=>b.f==me.id&&!b.seen&&bookingStatus(b)=='Rejected');
- const attention=rejected.length?`<div class=card><h3>Needs your attention</h3>${rejected.map(b=>`<div class="chk bad"><div class=rw><b>${E(b.purpose||'One-time session')} · Room ${E(b.r)}</b><button type=button class="sm neutral" onclick="dismissBooking(${Number(b.id)||0})">Dismiss</button></div>
-  <div class=mu>Date: ${E(fd(b.date))} · Time: ${E(f12(b.s))}–${E(f12(b.e))}</div>${(b.ap||[]).filter(a=>a.s=='rejected').map(a=>`<div><b>Rejected by:</b> ${E(a.by||reviewerName(a.r))} (${E(a.l)})${a.at?` on ${E(fd(a.at))}`:''}<br><b>Reason:</b> ${E(a.note||'No reason recorded.')}</div>`).join('')}</div>`).join('')}</div>`:'';
- return shell('Faculty Home','Here’s your classroom &amp; schedule overview.',stats([[freeNow(),'Available Rooms now'],[db.classes.filter(mine).length,'My Classes'],[mk.length,'Makeup Classes']])+attention+
+const fHome=()=>{const mine=x=>x.f==me.id,mk=db.mk.filter(m=>m.f==me.id&&active(m));
+ return shell('Faculty Home','Here’s your classroom &amp; schedule overview.',stats([[freeNow(),'Available Rooms now'],[db.classes.filter(mine).length,'My Classes'],[mk.length,'Makeup Classes']])+
  `<h3>Today’s Schedule</h3>`+tb(SH,dayRows(today(),mine),'No classes today.')+`<button onclick="go('sched')">View Schedule</button>`)};
-// Dismiss a rejected booking from faculty home without removing its history record.
-const dismissBooking=id=>{const b=db.bookings.find(x=>x.id==id&&x.f==me.id);if(!b)return;b.seen=true;save();render()};
 const aRes=()=>{const r=$('#res');if(!r)return;if(!F.go){r.innerHTML='';return}
  const bad=!F.d||F.d<today()||mins(F.s)>=mins(F.e)||!Number.isInteger(+F.n)||+F.n<1;
  if(F.room&&!db.rooms.some(x=>x.n==F.room&&!roomStatus(x,F.d,F.s,F.e,+F.n)))F.room=null;
@@ -259,35 +221,32 @@ const aRes=()=>{const r=$('#res');if(!r)return;if(!F.go){r.innerHTML='';return}
  tb(['Room','Room Type','Capacity','Status',''],db.rooms.filter(x=>x.c=='CCS').map(x=>{const status=roomStatus(x,F.d,F.s,F.e,+F.n),ok=!status;const row=['Room '+x.n,E(roomType(x)),x.cap,ok?'<span class=ok>● Available for this time</span>':`<span class=bad>● ${status}</span>`,
   ok?`<button class=sm onclick="F.room='${x.n}';aRes()">${F.room==x.n?'Selected':'Select room'}</button>`:'<span class=mu>—</span>'];if(!ok)row.off=1;return row}))+
  (F.room?`<p class=mu>Room ${E(F.room)} is selected for ${E(F.kind)}. The request will be reviewed by the Dean, then the University Administrator.</p><button onclick="bookRoom()">Submit for approval</button>`:'')+
- (db.bookings.filter(b=>b.f==me.id&&b.date==F.d).length?`<h3>My room requests for ${fd(F.d)}</h3>${tb(['Time','Room','Purpose','Attendees','Status','Action'],db.bookings.filter(b=>b.f==me.id&&b.date==F.d).map(b=>[`${f12(b.s)} – ${f12(b.e)}`,b.r,E(b.purpose||'One-time session'),b.attendees||'—',bookingStatus(b),activeBooking(b)?`<button class=rd onclick="cancelBooking(${b.id})">${bookingStatus(b).startsWith('Pending')?'Withdraw request':'Cancel reservation'}</button>`:bookingStatus(b)=='Cancelled'?`Cancelled: ${E(b.cx||'No reason recorded.')}`:(b.ap||[]).filter(a=>a.note).map(a=>E(`${a.l}: ${a.note}`)).join('<br>')||'—']))}`:'');
+ (db.bookings.filter(b=>b.f==me.id&&b.date==F.d&&bookingStatus(b)!='Cancelled').length?`<h3>My room requests for ${fd(F.d)}</h3>${tb(['Time','Room','Purpose','Attendees','Status','Action'],db.bookings.filter(b=>b.f==me.id&&b.date==F.d&&bookingStatus(b)!='Cancelled').map(b=>[`${f12(b.s)} – ${f12(b.e)}`,b.r,E(b.purpose||'One-time session'),b.attendees||'—',bookingStatus(b),activeBooking(b)?`<button class=rd onclick="cancelBooking(${b.id})">${bookingStatus(b).startsWith('Pending')?'Withdraw request':'Cancel reservation'}</button>`:(b.ap||[]).filter(a=>a.note).map(a=>E(`${a.l}: ${a.note}`)).join('<br>')||'—']))}`:'');
 };
 const bookRoom=async()=>{const r=db.rooms.find(x=>x.n==F.room);
  if(!r||!F.d||F.d<today()||mins(F.s)>=mins(F.e)||!BOOKING_PURPOSES.includes(F.kind)||!Number.isInteger(+F.n)||+F.n<1||roomStatus(r,F.d,F.s,F.e,+F.n)){F.room=null;aRes();return toast('That room is no longer available. Please check availability again.')}
- if(!await confirmAction('Submit one-time room request',`Request Room ${r.n} for ${F.kind} on ${fd(F.d)} from ${f12(F.s)} to ${f12(F.e)}? The request will go to ${reviewerName('dean')} and then ${reviewerName('vpaa')}.`,'Submit request'))return;
- db.bookings.push({id:Date.now(),f:me.id,date:F.d,requestedAt:today(),s:F.s,e:F.e,r:r.n,purpose:F.kind,section:F.section=='all'?'':F.section,attendees:+F.n,ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]});F.room=null;
+ if(!await confirmAction('Submit one-time room request',`Request Room ${r.n} for ${F.kind} on ${fd(F.d)} from ${f12(F.s)} to ${f12(F.e)}? The request will go to the Dean and then the University Administrator.`,'Submit request'))return;
+ db.bookings.push({id:Date.now(),f:me.id,date:F.d,s:F.s,e:F.e,r:r.n,purpose:F.kind,attendees:+F.n,ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]});F.room=null;
  log(`One-time room request: Room ${r.n} for ${F.kind} (${f12(F.s)}–${f12(F.e)})`,'Pending');aRes();toast('Request submitted. Waiting for the Dean’s approval.');
 };
 const cancelBooking=async id=>{const b=db.bookings.find(x=>x.id==id&&x.f==me.id);
- if(!b||!activeBooking(b))return;
- const reason=await confirmReason('Cancel room reservation',`Cancel your Room ${b.r} reservation on ${fd(b.date)}?`,'Confirm cancellation');if(reason===null)return;
- if(reason.length<10)return toast('Please give a detailed reason (at least 10 characters).');
- b.cx=reason;b.cxAt=today();
- save();log(`Cancelled Room ${b.r} request/reservation`,'Cancelled');aRes();toast('Room request/reservation cancelled.');
+ if(!b||!await confirmAction('Cancel room reservation',`Cancel your Room ${b.r} reservation on ${fd(b.date)}?`,'Cancel reservation'))return;
+ db.bookings=db.bookings.filter(x=>x.id!=id);log(`Cancelled Room ${b.r} request/reservation`,'Cancelled');aRes();toast('Room request/reservation cancelled.');
 };
-const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.kind||BOOKING_PURPOSES[0];F.section=F.section||'all';F.n=F.n||1;hook=aRes;const sections=[...new Set(db.classes.map(c=>c.sec).filter(Boolean))].sort();
+const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.kind||BOOKING_PURPOSES[0];F.n=F.n||1;hook=aRes;
  return shell('Classroom Availability','Find a room for a one-time session or check options before planning a makeup class.',`<div class=card>
  <div class=availability-note>
   <h2>About room availability</h2>
   <div class=availability-note-grid>
    <div><h3>Rooms are only occupied during scheduled classes</h3><p>Assigned rooms are not reserved for the whole day. Check the gaps between weekly classes, or choose a future date to plan ahead.</p></div>
    <div><h3>Check before you reserve</h3><p>Availability also depends on existing reservations, makeup classes, room status, and whether the room has enough seats.</p></div>
-   <div><h3>One-time sessions</h3><p>Request a room for a consultation, review session, exam, or activity. Requests are reviewed by the Dean, then the University Administrator.</p></div>
+   <div><h3>One-time sessions</h3><p>Request a room for a consultation, review session, exam, activity, or a regular class that needs a different room. Requests are reviewed by the Dean, then the University Administrator.</p></div>
    <div><h3>Makeup classes</h3><p>Use the Makeup Class Scheduler for makeup requests. They follow the separate Dean and University Administrator approval process.</p></div>
   </div>
  </div>
  <div class=g><div><label>College</label><select><option>College of Computer Studies</option></select></div>
  <div><label>Date</label>${I('d',F.d,'date')}</div><div><label>Start Time</label>${S('s',F.s,TS)}</div><div><label>End Time</label>${S('e',F.e,TS)}</div>
- <div><label>Session type</label>${S('kind',F.kind,BOOKING_PURPOSES)}</div><div><label for=booking-section>Section</label><select id=booking-section onchange="sf('section',this.value)">${[['all','All sections'],...sections].map(x=>{const[a,b]=Array.isArray(x)?x:[x,x];return`<option value="${E(a)}"${a==F.section?' selected':''}>${E(b)}</option>`}).join('')}</select></div><div><label>Number of attendees</label>${I('n',F.n,'number','min=1 step=1')}</div></div>
+ <div><label>Session type</label>${S('kind',F.kind,BOOKING_PURPOSES)}</div><div><label>Number of attendees</label>${I('n',F.n,'number','min=1 step=1')}</div></div>
  <button onclick="F.go=1;F.room=null;aRes()">Check Availability ${ib('search')}</button></div><h3>Available Rooms</h3><div id=res></div>`)+(F.go?(setTimeout(aRes),''):'')};
 const calc=()=>{const[sec,sub]=(F.cls||'|').split('|'),{d,od,s,e}=F,students=Number(F.n);
  const dateError=!validDate(d)?'Enter a valid makeup date.':d<today()?'The makeup date cannot be in the past.':!validDate(od)?'Enter a valid original class date.':d<=od?'The makeup date must be later than the original class date.':'';
@@ -303,7 +262,7 @@ const calc=()=>{const[sec,sub]=(F.cls||'|').split('|'),{d,od,s,e}=F,students=Num
  const chk=error?`<span class=bad>● ${E(error)}</span>`:sc.length?`<span class=bad>● Conflict: ${sec} already has ${E(list(sc))}. Choose another schedule.</span>`:fc.length?`<span class=bad>● Conflict: you already have ${E(list(fc))}.</span>`:`<span class=ok>● Clear. ${sec} has no conflicting class during this time.</span>`;
  return{ok,error:error||(!whyOK?'Enter a specific reason with at least 10 characters.':''),studentsValid:!studentError,html:`<h3>Available Rooms</h3>${tb(['Room','Room Type','Capacity','Status',''],rm.map(x=>{const row=['Room '+x.r.n,E(roomType(x.r)),x.r.cap,x.ok?'<span class=ok>● Available</span>':`<span class=bad>● ${x.why}</span>`,
   x.ok?`<button class=sm onclick="F.room='${x.r.n}';upd()">${F.room==x.r.n?'Selected':'Select room'}</button>`:'<span class=mu>—</span>'];if(!x.ok)row.off=1;return row}))}
-  <div class=chk><b>Schedule Check</b><br>${chk}</div><div class=chk><b>Approval needed</b><br>${E(reviewerName('dean'))} → ${E(reviewerName('vpaa'))}. The room is held while pending and confirmed once both approve.</div>`}};
+  <div class=chk><b>Schedule Check</b><br>${chk}</div><div class=chk><b>Approval needed</b><br>Dean → University Administrator. The room is held while pending and confirmed once both approve.</div>`}};
 const upd=()=>{const c=calc();$('#dyn').innerHTML=c.html;$('#sb').disabled=!c.ok;
  const studentHint=$('#student-hint');
  if(studentHint){studentHint.className='chk '+(c.studentsValid?'ok':'bad');studentHint.textContent=c.studentsValid?'Student count looks good.':'Enter a whole number greater than zero.'}
@@ -322,39 +281,19 @@ const submitMk=()=>{const c=calc();if(!c.ok){upd();return toast(c.error||'Please
  const[sec,sub]=F.cls.split('|');db.mk.push({id:Date.now(),f:me.id,sec,sub,n:+F.n,od:F.od,date:F.d,s:F.s,e:F.e,room:F.room,why:F.why.trim(),v:{},
  ap:[{l:'Dean',r:'dean',s:'pending'},{l:'Univ. Admin',r:'vpaa',s:'waiting'}]});log(`Makeup request: ${sub} ${sec} (${me.name})`,'Pending');toast('Submitted. Waiting for the Dean’s approval.');go('sched')};
 const mkCard=(m,x='')=>`<div class=card><div class=rw><b>${m.sub} · ${m.sec} — ${fd(m.date)}, ${f12(m.s)}–${f12(m.e)}, Room ${m.room}</b>${bd(m)}</div>
- <div class=mu>${E(U(m.f).name)} · original class ${fd(m.od)} · ${E(m.why)}</div>${trk(m)}${pendingApprovals(m.ap)}${notes(m)}<div class=mu>Student votes: ${tal(m)}</div>${x}</div>`;
+ <div class=mu>${E(U(m.f).name)} · original class ${fd(m.od)} · ${E(m.why)}</div>${trk(m)}${notes(m)}<div class=mu>Student votes: ${tal(m)}</div>${x}</div>`;
 const fSched=()=>{const{start,end}=schoolYear();F.d=F.d||today();if(F.d<start||F.d>end)F.d=today();hook=()=>{$('#res').innerHTML=tb(SH,dayRows(F.d,x=>x.f==me.id),'No classes on this date.')};
  return shell('My Schedule','View your assigned class and makeup schedules.',`<div class=card><label for=schedule-date>Date (current school year: ${fd(start)} – ${fd(end)})</label><input id=schedule-date class=schedule-date type=date min="${start}" max="${end}" value="${E(F.d)}" onchange="setScheduleDate(this.value)"></div><div id=res>${tb(SH,dayRows(F.d,x=>x.f==me.id),'No classes on this date.')}</div>
  <h3>My Makeup Requests</h3>${db.mk.filter(m=>m.f==me.id).map(m=>mkCard(m,/Pending/.test(st(m))?`<button class="rd sm" onclick="cancelMk(${m.id},1)">Withdraw request</button>`:'')).join('')||'<div class=card>No requests yet.</div>'}`)};
 const cancelMk=(id,self)=>{const m=db.mk.find(x=>x.id==id),r=self?'Withdrawn by faculty':($('#cx'+id)?.value||'').trim();if(r.length<10)return toast('Please give a detailed reason (at least 10 characters).');
  m.cx=r;log(`Makeup cancelled: ${m.sub} ${m.sec}`,'Cancelled');render()};
 
-// Render one-time requests and refresh the list through the shared filter hook.
-const fHist=()=>{
- const requests=()=>db.bookings.filter(b=>b.f==me.id),statusOf=b=>{const s=bookingStatus(b);return s.startsWith('Pending')?'Pending':s},statuses=['Pending','Approved','Rejected','Cancelled'];
- const list=()=>filteredBookingHistory().map(b=>{
-  const status=statusOf(b),rejection=(b.ap||[]).filter(a=>a.s=='rejected').map(a=>a.note).filter(Boolean).join(' ');
-  const details=status=='Rejected'?`<div class=mu><b>Rejection reason:</b> ${E(rejection||'No reason recorded.')}</div>`:status=='Cancelled'?`<div class=mu><b>Cancelled:</b> ${E(b.cx||'No reason recorded.')}</div>`:'';
-  return bookingCard(b,details+`<button type=button class=sm onclick="printBookingForm(${Number(b.id)||0})">${ib('print')}Print form</button>`);
- }).join('')||'<div class=card>No consultation records yet.</div>';
- const counts=statuses.map(status=>[requests().filter(b=>statusOf(b)==status).length,status]);
- hook=()=>{const target=$('#hist-list');if(target)target.innerHTML=list()};
- return shell('Consultation History','Review your one-time room requests and their approval history.',stats(counts)+
-  `<div class=card><div class=g><div><label for=hist-search>Search</label><input id=hist-search type=search value="${E(F.histQ||'')}" oninput="sf('histQ',this.value)"></div>
-  <div><label for=hist-status>Status</label><select id=hist-status onchange="sf('histStatus',this.value)">${['All',...statuses].map(s=>`<option value="${s}"${(F.histStatus||'All')==s?' selected':''}>${s}</option>`).join('')}</select></div>
-  <div><label for=hist-from>Date from</label><input id=hist-from type=date value="${E(F.histFrom||'')}" oninput="sf('histFrom',this.value)"></div>
-  <div><label for=hist-to>Date to</label><input id=hist-to type=date value="${E(F.histTo||'')}" oninput="sf('histTo',this.value)"></div></div></div>
-  <div class=rw><span class=mu>Consultation history</span><button type=button onclick=printBookingHistory()>${ib('print')}Print history</button></div>
-  <div id=hist-list>${list()}</div><div id=print-area hidden></div>`);
-};
-
 /* ---------- student ---------- */
 const sRes=()=>{$('#res').innerHTML=tb(SH,dayRows(F.pd,x=>x.f==F.pf),'No classes on this date.')};
-const sHome=()=>{const sec=me.section,mk=db.mk.filter(m=>m.sec==sec&&active(m)),profs=db.users.filter(u=>u.role=='faculty'),sessions=db.bookings.filter(b=>bookingStatus(b)=='Approved'&&b.date>=today()&&['Consultation','Review session','Exam'].includes(b.purpose)&&(!b.section||b.section=='all'||b.section==sec)).sort((a,b)=>a.date.localeCompare(b.date));F.pf=F.pf||profs[0].id;F.pd=F.pd||today();hook=sRes;
+const sHome=()=>{const sec=me.section,mk=db.mk.filter(m=>m.sec==sec&&active(m)),profs=db.users.filter(u=>u.role=='faculty');F.pf=F.pf||profs[0].id;F.pd=F.pd||today();hook=sRes;
  return shell('Student Home',`Section ${sec} · view only`,stats([[dayRows(today(),x=>x.sec==sec).length,'Classes today'],[mk.filter(m=>!m.v[me.id]).length,'Makeup votes waiting'],[mk.filter(m=>st(m)=='Scheduled').length,'Scheduled makeups']])+
  `<h3>Today’s schedule for ${sec}</h3>`+tb(SH,dayRows(today(),x=>x.sec==sec),'No classes today.')+
- `<h3>Approved room sessions</h3><p class=mu>Open to students</p>${sessions.length?sessions.map(b=>`<div class=card><div class=rw><b>${E(b.purpose)}</b><b class="bd ok">Approved</b></div><div class=g><div><b>Date</b><div>${E(fd(b.date))}</div></div><div><b>Time</b><div>${E(f12(b.s))}–${E(f12(b.e))}</div></div><div><b>Room</b><div>${E(b.r)}</div></div><div><b>Faculty</b><div>${E(U(b.f).name)}</div></div></div></div>`).join(''):'<div class=card>No approved room sessions yet.</div>'}
- <h3>View a professor’s schedule</h3><div class=card><div class=g><div>${S('pf',F.pf,profs.map(p=>[p.id,p.name]))}</div><div>${I('pd',F.pd,'date')}</div></div></div><div id=res>${tb(SH,dayRows(F.pd,x=>x.f==F.pf),'No classes on this date.')}</div>`) };
+ `<h3>View a professor’s schedule</h3><div class=card><div class=g><div>${S('pf',F.pf,profs.map(p=>[p.id,p.name]))}</div><div>${I('pd',F.pd,'date')}</div></div></div><div id=res>${tb(SH,dayRows(F.pd,x=>x.f==F.pf),'No classes on this date.')}</div>`)};
 const vote=async(id,v)=>{const m=db.mk.find(x=>x.id==id&&x.sec==me.section&&active(x));if(!m)return toast('This makeup class is no longer available for voting.');
  const previous=m.v[me.id],changing=!!previous;
  if(previous==v)return toast('That is already your saved vote.');
@@ -377,40 +316,8 @@ const act=(id,yes)=>{const m=db.mk.find(x=>x.id==id),i=m.ap.findIndex(a=>a.r==me
  if(!a)return;if(!yes&&note.length<15)return toast('Rejecting needs a detailed reason (at least 15 characters).');
  Object.assign(a,{s:yes?'approved':'rejected',by:me.name,at:today()});if(note)a.note=note;if(yes&&m.ap[i+1])m.ap[i+1].s='pending';
  log(`${yes?'Approved':'Rejected'} by ${me.title.split(',')[0]}: ${m.sub} ${m.sec}`,yes?'Approved':'Rejected');toast(yes?'Approved.':'Rejected. Faculty will see your reason.');render()};
-const bookingCard=(b,extra='')=>`<div class=card><div class=rw><b>${E(b.purpose||'One-time session')} — Room ${E(b.r)}, ${fd(b.date)}, ${f12(b.s)}–${f12(b.e)}</b><b class="bd ${bookingStatus(b)=='Approved'?'ok':bookingStatus(b)=='Rejected'?'bad':'wt'}">${E(bookingStatus(b))}</b></div>
- <div class=mu>${E(U(b.f).name)} · ${E(b.attendees||'—')} attendees</div>${(b.ap||[]).map(a=>a.s=='rejected'?`<div class="chk bad"><b>Rejected by:</b> ${E(a.by||reviewerName(a.r))} (${E(a.l)})${a.at?` on ${E(fd(a.at))}`:''}<br><b>Reason:</b> ${E(a.note||'No reason recorded.')}</div>`:`<div class=mu>${E(a.l)}: ${E(a.s)}${a.s=='pending'||a.s=='waiting'?`, ${E(reviewerName(a.r))}`:''}${a.by?` by ${E(a.by)} on ${fd(a.at)}`:''}${a.note?` — “${E(a.note)}”`:''}</div>`).join('')}${bookingStatus(b)=='Cancelled'?`<div class="chk bad"><b>Cancelled:</b> ${E(b.cx||'No reason recorded.')}${b.cxAt?` on ${E(fd(b.cxAt))}`:''}</div>`:''}${extra}</div>`;
-// Keep the history print list in sync with the live filters on the page.
-const filteredBookingHistory=()=>{
- const q=(F.histQ||'').trim().toLowerCase();
- return db.bookings.filter(b=>{
-  const rawStatus=bookingStatus(b),status=rawStatus.startsWith('Pending')?'Pending':rawStatus,reasons=(b.ap||[]).filter(a=>a.s=='rejected').map(a=>a.note||'').join(' ');
-  return b.f==me.id&&(!q||`${b.purpose||''} ${b.r||''} ${reasons}`.toLowerCase().includes(q))&&(!F.histStatus||F.histStatus=='All'||status==F.histStatus)&&(!F.histFrom||b.date>=F.histFrom)&&(!F.histTo||b.date<=F.histTo);
- }).sort((a,b)=>b.date.localeCompare(a.date));
-};
-// Build a printable consultation authorization form for one request.
-const bookingForm=b=>{
- const faculty=U(b.f),status=bookingStatus(b),requestDate=b.requestedAt||b.submittedAt||b.createdAt,requestDateValue=requestDate&&validDate(String(requestDate).slice(0,10))?fd(String(requestDate).slice(0,10)):'';
- const dean=(b.ap||[]).find(a=>a.r=='dean'&&a.s=='approved'),admin=(b.ap||[]).find(a=>a.r=='vpaa'&&a.s=='approved');
- const reason=status=='Rejected'?(b.ap||[]).filter(a=>a.s=='rejected').map(a=>a.note).filter(Boolean).join(' '):status=='Cancelled'?b.cx:'';
- return`<div id=print class="card booking-form"><h2>Room Request / Consultation Authorization Form</h2><div class=mu>Tarlac State University · College of Computer Studies</div>
-  <p><b>Faculty name and title:</b> ${E(faculty.name)}${faculty.title?` · ${E(faculty.title)}`:''}<br><b>Purpose:</b> ${E(b.purpose||'One-time session')}<br>
-  <b>Room:</b> ${E(b.r)}<br><b>Date:</b> ${E(fd(b.date))}<br><b>Time:</b> ${E(f12(b.s))} – ${E(f12(b.e))}<br><b>Attendees:</b> ${E(b.attendees||'—')}<br><b>Status:</b> ${E(status)}${requestDateValue?`<br><b>Date requested:</b> ${E(requestDateValue)}`:''}</p>
-  ${reason?`<p><b>${status=='Rejected'?'Rejection reason':'Cancellation reason'}:</b> ${E(reason)}</p>`:''}
-  <h3>Approval trail</h3>${(b.ap||[]).map(a=>`<div class=mu><b>${E(a.l)}:</b> ${E(a.s)}${a.by?` by ${E(a.by)}`:''}${a.at?` on ${E(fd(a.at))}`:''}${a.note?` — ${E(a.note)}`:''}</div>`).join('')||'<div class=mu>No approval trail recorded.</div>'}
-  <div class=sig><u>${dean?`${E(dean.by||'')}${dean.at?` · ${E(fd(dean.at))}`:''}`:'&nbsp;'}</u>Dean approval</div>
-  <div class=sig><u>${admin?`${E(admin.by||'')}${admin.at?` · ${E(fd(admin.at))}`:''}`:'&nbsp;'}</u>University Administrator approval</div></div>`;
-};
-// Build the currently filtered history as a printable table.
-const bookingHistoryPrint=list=>`<div id=print class="card booking-history-print"><h2>Consultation History</h2><div class=mu>Tarlac State University · College of Computer Studies</div><p>Printed on ${E(fd(today()))}</p>
- <table class=booking-history-table><thead><tr>${['Date','Time','Room','Purpose','Status','Approver','Reason'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${list.length?list.map(b=>{
-  const status=bookingStatus(b),approver=(b.ap||[]).filter(a=>a.by).map(a=>`${E(a.l)}: ${E(a.by)}${a.at?` (${E(fd(a.at))})`:''}`).join('<br>')||'—';
-  const reason=status=='Rejected'?(b.ap||[]).filter(a=>a.s=='rejected').map(a=>a.note).filter(Boolean).map(E).join('<br>'):status=='Cancelled'?`Cancelled: ${E(b.cx||'')}`:'';
-  return`<tr><td>${E(fd(b.date))}</td><td>${E(f12(b.s))} – ${E(f12(b.e))}</td><td>${E(b.r)}</td><td>${E(b.purpose||'One-time session')}</td><td>${E(status)}</td><td>${approver}</td><td>${reason||'—'}</td></tr>`;
- }).join(''):`<tr><td colspan=7>No consultation records yet.</td></tr>`}</tbody></table></div>`;
-// Print the selected faculty request and hide its temporary form afterward.
-const printBookingForm=id=>{const booking=db.bookings.find(b=>b.id==id&&b.f==me.id),area=$('#print-area');if(!booking||!area)return;area.innerHTML=bookingForm(booking);area.hidden=false;try{window.print()}finally{area.hidden=true;area.innerHTML=''}};
-// Print the request history using the current search, status, and date filters.
-const printBookingHistory=()=>{const area=$('#print-area');if(!area)return;area.innerHTML=bookingHistoryPrint(filteredBookingHistory());area.hidden=false;try{window.print()}finally{area.hidden=true;area.innerHTML=''}};
+const bookingCard=b=>`<div class=card><div class=rw><b>${E(b.purpose||'One-time session')} — Room ${E(b.r)}, ${fd(b.date)}, ${f12(b.s)}–${f12(b.e)}</b><b class="bd ${bookingStatus(b)=='Approved'?'ok':bookingStatus(b)=='Rejected'?'bad':'wt'}">${E(bookingStatus(b))}</b></div>
+ <div class=mu>${E(U(b.f).name)} · ${b.attendees||'—'} attendees</div>${(b.ap||[]).map(a=>`<div class=mu>${E(a.l)}: ${E(a.s)}${a.by?` by ${E(a.by)} on ${fd(a.at)}`:''}${a.note?` — “${E(a.note)}”`:''}</div>`).join('')}</div>`;
 const actBooking=(id,yes)=>{const b=db.bookings.find(x=>x.id==id),i=b?.ap?.findIndex(a=>a.r==me.role&&a.s=='pending'),a=i>=0?b.ap[i]:null,note=($('#brj'+id)?.value||'').trim();
  if(!a)return toast('This room request is no longer awaiting your decision.');
  if(!yes&&note.length<15)return toast('Rejecting needs a detailed reason (at least 15 characters).');
@@ -431,8 +338,7 @@ const aAppr=()=>{const requests=db.bookings.filter(bookingNeedsAction),decisions
 };
 
 /* ---------- clerk (admin) ---------- */
-const cHome=()=>shell('Admin Home','Manage classrooms, schedules, one-time requests, and makeup classes.',stats([[db.rooms.length,'Classrooms'],[db.users.filter(u=>u.role=='faculty').length,'Faculty'],[db.classes.length,'Classes'],[db.mk.length,'Makeup Classes'],
- [db.bookings.filter(b=>bookingStatus(b).startsWith('Pending')).length,'Pending Consultations'],[db.bookings.filter(b=>bookingStatus(b)=='Approved').length,'Approved Consultations'],[db.bookings.filter(b=>bookingStatus(b)=='Rejected').length,'Rejected Consultations']])+
+const cHome=()=>shell('Admin Home','Manage classrooms, schedules, and makeup classes.',stats([[db.rooms.length,'Classrooms'],[db.users.filter(u=>u.role=='faculty').length,'Faculty'],[db.classes.length,'Classes'],[db.mk.length,'Makeup Classes']])+
  `<h3>Recent Activity</h3>`+tb(['Date','Activity','Status'],db.log.slice(0,6).map(l=>[fd(l.d),E(l.t),l.s])));
 const addRoom=()=>{const n=(F.rn||'').trim().toUpperCase(),type=F.rt||'',cap=+F.rcap;if(!n||!ROOM_TYPES.includes(type)||!(cap>0))return toast('Enter a room number, choose a room type, and enter a capacity.');
  if(db.rooms.some((r,i)=>i!=ed&&r.n==n))return toast('That room number already exists.');const o={n,c:'CCS',cap,on:(F.rs||'1')=='1'};
@@ -465,36 +371,8 @@ const detail=m=>`<div id=print class=card><h3>Makeup Class Authorization Form</h
 const cMk=()=>{hook=lst;const m=db.mk.find(x=>x.id==sel);
  return shell('Makeup Class Management','View, track, and print faculty makeup class records.',`<div class=card><div class=g><div><label>Search</label><input value="${E(F.q||'')}" oninput="sf('q',this.value)"></div><div><label>Filter</label>${S('ft',F.ft||'All',['All','Scheduled','Pending','Rejected','Cancelled'])}</div></div><div class=mu>Rejected and cancelled records remain available to view and print. The clerk can delete individual records when they are no longer needed.</div></div>
  <div id=lst></div>${m?detail(m):''}`)+(setTimeout(lst),'')};
-// Delete only rejected or cancelled one-time request records for the clerk.
-const deleteCancelledBooking=async id=>{
- if(me.role!='clerk')return toast('Only the clerk can delete consultation records.');
- const b=db.bookings.find(x=>x.id==id),status=b&&bookingStatus(b);
- if(!b||!['Cancelled','Rejected'].includes(status))return toast('Only cancelled or rejected consultations can be deleted.');
- if(!await confirmAction('Delete consultation record',`Permanently delete the ${status.toLowerCase()} request for Room ${b.r} (${b.purpose||'one-time session'})? You can print the record before deleting it.`,'Delete record'))return;
- db.bookings=db.bookings.filter(x=>x.id!=id);
- if(sel==id)sel=null;
- log(`Deleted ${status.toLowerCase()} consultation: Room ${b.r} for ${b.purpose||'one-time session'}`,'Deleted');
- render();toast('Consultation record deleted.');
-};
-// Render the clerk's searchable consultation list in newest-date order.
-const cRecList=()=>{const target=$('#lst');if(!target)return;const q=(F.q||'').trim().toLowerCase(),ft=F.ft||'All';
- const records=db.bookings.filter(b=>{
-  const status=bookingStatus(b),reason=[b.cx||'',...(b.ap||[]).map(a=>a.note||'')].join(' '),text=`${U(b.f).name} ${b.r} ${b.purpose||''} ${reason}`.toLowerCase();
-  return(ft=='All'||status.startsWith(ft))&&text.includes(q);
- }).sort((a,b)=>b.date.localeCompare(a.date));
- target.innerHTML=tb(['Faculty','Date','Time','Room','Purpose','Attendees','Status','Action'],records.map(b=>{
-  const status=bookingStatus(b),badge=status=='Approved'?'ok':['Rejected','Cancelled'].includes(status)?'bad':'wt';
-  return[E(U(b.f).name),fd(b.date),`${f12(b.s)}–${f12(b.e)}`,E(b.r),E(b.purpose||'One-time session'),E(b.attendees||'—'),`<span class="bd ${badge}">${E(status)}</span>`,`<button class=sm onclick="sel=${Number(b.id)||0};render()">View</button>${['Rejected','Cancelled'].includes(status)?`<button class="sm rd" onclick="deleteCancelledBooking(${Number(b.id)||0})">Delete</button>`:''}`];
- }),'No consultation records yet.');
-};
-// Show all faculty consultation records with the selected printable form.
-const cRec=()=>{hook=cRecList;const b=db.bookings.find(x=>x.id==sel);
- return shell('Consultation Records','View, filter, print, and manage one-time room requests from all faculty.',`<div class=card><div class=g>
-  <div><label for=crec-search>Search</label><input id=crec-search type=search value="${E(F.q||'')}" oninput="sf('q',this.value)"></div>
-  <div><label for=crec-status>Status</label><select id=crec-status onchange="sf('ft',this.value)">${['All','Pending','Approved','Rejected','Cancelled'].map(s=>`<option value="${s}"${(F.ft||'All')==s?' selected':''}>${s}</option>`).join('')}</select></div>
- </div></div><div id=lst></div>${b?`${bookingForm(b)}<button type=button onclick=print()>${ib('print')}Print form</button>`:''}`)+(setTimeout(cRecList),'')};
 
 /* ---------- router ---------- */
-const PG={faculty:{home:fHome,avail:fAvail,makeup:fMakeup,sched:fSched,hist:fHist,officials:approvingOfficials},student:{home:sHome,votes:sVotes,officials:approvingOfficials},clerk:{home:cHome,rooms:cRooms,mk:cMk,crec:cRec,officials:approvingOfficials},dean:{home:aHome,appr:aAppr},vpaa:{home:aHome,appr:aAppr}};
+const PG={faculty:{home:fHome,avail:fAvail,makeup:fMakeup,sched:fSched},student:{home:sHome,votes:sVotes},clerk:{home:cHome,rooms:cRooms,mk:cMk},dean:{home:aHome,appr:aAppr},vpaa:{home:aHome,appr:aAppr}};
 function render(){hook=null;mobileNavOpen=false;$('#app').className=me?`app${sidebarOpen?'':' sidebar-hidden'}`:'';$('#app').innerHTML=me?PG[me.role][pg]():loginPg();save()}
 render();
