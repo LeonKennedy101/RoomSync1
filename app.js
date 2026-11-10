@@ -233,7 +233,7 @@ const cancelBooking=async id=>{const b=db.bookings.find(x=>x.id==id&&x.f==me.id)
  if(!b||!await confirmAction('Cancel room reservation',`Cancel your Room ${b.r} reservation on ${fd(b.date)}?`,'Cancel reservation'))return;
  db.bookings=db.bookings.filter(x=>x.id!=id);log(`Cancelled Room ${b.r} request/reservation`,'Cancelled');aRes();toast('Room request/reservation cancelled.');
 };
-const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.kind||BOOKING_PURPOSES[0];F.n=F.n||1;hook=aRes;
+const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.kind||BOOKING_PURPOSES[0];F.sec=F.sec||'All sections';F.n=F.n||1;hook=aRes;
  return shell('Classroom Availability','Find a room for a one-time session or check options before planning a makeup class.',`<div class=card>
  <div class=availability-note>
   <h2>About room availability</h2>
@@ -246,7 +246,7 @@ const fAvail=()=>{F.d=F.d||today();F.s=F.s||'13:00';F.e=F.e||'14:30';F.kind=F.ki
  </div>
  <div class=g><div><label>College</label><select><option>College of Computer Studies</option></select></div>
  <div><label>Date</label>${I('d',F.d,'date')}</div><div><label>Start Time</label>${S('s',F.s,TS)}</div><div><label>End Time</label>${S('e',F.e,TS)}</div>
- <div><label>Session type</label>${S('kind',F.kind,BOOKING_PURPOSES)}</div><div><label>Number of attendees</label>${I('n',F.n,'number','min=1 step=1')}</div></div>
+ <div><label>Session type</label>${S('kind',F.kind,BOOKING_PURPOSES)}</div><div><label>Section</label>${S('sec',F.sec,['All sections',...[...new Set(db.classes.map(c=>c.sec))].sort()])}</div><div><label>Number of attendees</label>${I('n',F.n,'number','min=1 step=1')}</div></div>
  <button onclick="F.go=1;F.room=null;aRes()">Check Availability ${ib('search')}</button></div><h3>Available Rooms</h3><div id=res></div>`)+(F.go?(setTimeout(aRes),''):'')};
 const calc=()=>{const[sec,sub]=(F.cls||'|').split('|'),{d,od,s,e}=F,students=Number(F.n);
  const dateError=!validDate(d)?'Enter a valid makeup date.':d<today()?'The makeup date cannot be in the past.':!validDate(od)?'Enter a valid original class date.':d<=od?'The makeup date must be later than the original class date.':'';
